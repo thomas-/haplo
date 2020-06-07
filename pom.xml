@@ -6,6 +6,22 @@
   <version>3.20200608.1154.38f1801744</version>
   <packaging>jar</packaging>
 
+  <repositories>
+    <repository>
+      <id>atlassian-public</id>
+      <url>https://packages.atlassian.com/mvn/maven-external/</url>
+      <snapshots>
+        <enabled>true</enabled>
+        <updatePolicy>never</updatePolicy>
+        <checksumPolicy>warn</checksumPolicy>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+        <checksumPolicy>warn</checksumPolicy>
+      </releases>
+    </repository>
+  </repositories>
+
   <dependencies>
     <dependency>
       <groupId>log4j</groupId>
@@ -158,6 +174,11 @@
       <groupId>org.glassfish</groupId>
       <artifactId>javax.json</artifactId>
       <version>1.1.4</version>
+    </dependency>
+    <dependency>
+      <groupId>com.atlassian.sourcemap</groupId>
+      <artifactId>sourcemap</artifactId>
+      <version>1.7.7</version>
     </dependency>
     <dependency>
       <groupId>com.maxmind.geoip2</groupId>

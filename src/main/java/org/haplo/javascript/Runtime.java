@@ -7,11 +7,18 @@
 package org.haplo.javascript;
 
 import java.io.LineNumberReader;
+import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.HashSet;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.json.JsonParser;
+
+import com.atlassian.sourcemap.*;
 
 import org.apache.commons.io.IOUtils;
 
@@ -47,6 +54,7 @@ public class Runtime {
     private Scriptable runtimeScope;
     private KHost host;
     private PluginTestingSupport testingSupport;
+    private Map<String, String> scriptFilenames = new HashMap<String, String>();
 
     // Interface to load standard templates
     public interface StandardTemplateLoader {
@@ -164,6 +172,7 @@ public class Runtime {
     public void loadScript(String scriptPathname, String givenFilename, String prefix, String suffix) throws java.io.IOException {
         checkContext();
         FileReader script = new FileReader(scriptPathname);
+        scriptFilenames.put(givenFilename, scriptPathname);
         try {
             if(prefix != null || suffix != null) {
                 // TODO: Is it worth loading JS files with prefix+suffix using a fancy Reader which concatenates other readers?
@@ -707,6 +716,50 @@ public class Runtime {
             }
         }
         return null;
+    }
+
+    // Proof of concept: converting a line number in a compiled file
+    // to the original file/line number via embedded source mappings
+    public String getMappingForScript(String givenFilename, int lineNumber) throws IOException {
+        String scriptPathname = scriptFilenames.get(givenFilename);
+        if(scriptPathname == null) { return "couldn't load original file"; }
+        final FileReader script = new FileReader(scriptPathname);
+        BufferedReader input = new BufferedReader(script);
+        String last = "", line;
+        int currentLineNumber = 0, column = 0;
+        while ((line = input.readLine()) != null) {
+            currentLineNumber++;
+            if(currentLineNumber == lineNumber) {
+                // if the first mapping in a line is at a non-0 column number
+                // the sourcemap parser will select the previous mapping,
+                // if we specify a column number below the first one
+                // To workaround this, we get the first non-whitespace char
+                // of the erroring line, and use that column with getMapping()
+                column = line.indexOf(line.trim());
+            }
+            last = line;
+        }
+        input.close();
+        // BAD BAD BAD
+        // This is a bad way to check if there is a source mapping included
+        // in the file.
+        if(last.length() < 64) { return "original"; } // guard out of range
+        if(last.substring(0, 64).equals("//# sourceMappingURL=data:application/json;charset=utf-8;base64,")) {
+            String b64encoded = last.split(",")[1];
+            byte[] decodedBytes = Base64.getDecoder().decode(b64encoded);
+            String decodedString = new String(decodedBytes);
+            SourceMap map = new SourceMapImpl(decodedString);
+            Mapping result = map.getMapping(lineNumber, column);
+            // Debug: Iterate over each mapping.
+            // System.out.println("All mappings:");
+            // map.eachMapping(new SourceMap.EachMappingCallback() { public void apply(Mapping mapping) {
+            //     System.out.println(mapping);
+            // }});
+            return ""+result;
+        } else {
+            // Probably shouldn't return this... but, proof of concept.
+            return "original";
+        }
     }
 
     // NAME() for Java

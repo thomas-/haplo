@@ -69,8 +69,11 @@ module PluginDebugging
         last_line = nil
         exception.getScriptStack().each do |sse|
           fn = sse.fileName.gsub(RHINO_LINE_PREFIX,'')
+          plugin_runtime = KJSPluginRuntime.current
+          runtime = plugin_runtime.runtime
+          mapped = runtime.getMappingForScript(fn, sse.lineNumber)
           if fn =~ /\Ap\/(.+)/
-            line = "#{$1} (line #{sse.lineNumber})"
+            line = "#{$1} (line #{sse.lineNumber}) #{mapped}"
             if last_line != line
               backtrace << line
               last_line = line

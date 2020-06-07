@@ -163,8 +163,11 @@ class KFramework
       KApp.logger.error("Incorrect URL requested #{exchange.request.path}")
       exchange.response = make_not_found_response(exchange)
     rescue => e
+      reportable_error_text = nil
       # Is it a reportable error?
-      reportable_error_text = KFramework.reportable_exception_error_text(e, :html)
+      KApp.in_application(exchange.application_id) do
+        reportable_error_text = KFramework.reportable_exception_error_text(e, :html)
+      end
       if reportable_error_text == nil
         # Not reportable or reportable errors disabled in production instance
         exchange.response = make_error_response(e, exchange)
