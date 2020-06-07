@@ -63,7 +63,7 @@ public class JdNamespace extends KScriptable {
     }
 
     // --------------------------------------------------------------------------------------------------------------
-    public void jsFunction_table(String name, Scriptable fields, Scriptable methods) {
+    public JdTable jsFunction_table(String name, Scriptable fields, Scriptable methods) {
         JdNamespace.checkNameIsAllowed(name);
         if(this.has(name, this)) {
             throw new OAPIException("Database table '"+name+"' has already been declared.");
@@ -72,6 +72,7 @@ public class JdNamespace extends KScriptable {
         table.setNamespace(this);
         this.tables.add(table);
         this.put(name, this, table);
+        return table;
     }
 
     // Experimental API for tables which have fields defined at runtime, rather than statically defined
